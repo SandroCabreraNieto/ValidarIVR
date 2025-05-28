@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>IVR AUDIO / IVR MUDO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2rem;
+            background: #f4f6f8;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #555;
+        }
+        select, input[type="file"], button {
+            width: 100%;
+            padding: 0.6rem;
+            margin-top: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+        .section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .section.hidden {
+            display: none;
+        }
+        .resultado {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #e2f0d9;
+            border: 1px solid #a2c57d;
+            border-radius: 5px;
+            color: #4a7c2f;
+        }
+        .btn-descargar {
+            margin-top: 1rem;
+            display: block;
+            width: 100%;
+            padding: 0.6rem;
+            background: #4a7c2f;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IVR AUDIO / IVR MUDO</h1>
+
+        <form method="POST" enctype="multipart/form-data" id="mainForm" action="/">
+            <label for="modulo">Seleccione módulo</label>
+            <select id="modulo" name="modulo" required>
+                <option value="">--Seleccione--</option>
+                <option value="audio" {% if modulo == 'audio' %}selected{% endif %}>IVR AUDIO</option>
+                <option value="mudo" {% if modulo == 'mudo' %}selected{% endif %}>IVR MUDO</option>
+            </select>
+
+            <label for="campaña">Seleccione campaña</label>
+            <select id="campaña" name="campaña" required>
+                <option value="">--Seleccione campaña--</option>
+                {% for c in campañas %}
+                <option value="{{ c }}" {% if request.form.get('campaña') == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="archivo">Subir archivo Excel</label>
+            <input type="file" id="archivo" name="archivo" accept=".xlsx,.xls" required />
+
+    
+
+            <button type="submit" style="margin-top: 1.5rem;">Procesar</button>
+        </form>
+
+        {% if procesado %}
+        <div class="resultado">
+            <p><strong>Archivo procesado:</strong> {{ nombre_archivo }}</p>
+            <p>Cantidad ingresada: {{ cantidad_ingresada }}</p>
+            <p>Cantidad final: {{ cantidad_final }}</p>
+        </div>
+
+        <a href="{{ url_for('descargar') }}" class="btn-descargar">Descargar archivo procesado</a>
+        {% endif %}
+    </div>
+
+    <script>
+        const moduloSelect = document.getElementById('modulo');
+        const audioSection = document.getElementById('audio-section');
+        const mudoSection = document.getElementById('mudo-section');
+
+        moduloSelect.addEventListener('change', function() {
+            if(this.value === 'audio'){
+                audioSection.classList.remove('hidden');
+                mudoSection.classList.add('hidden');
+            } else if(this.value === 'mudo'){
+                mudoSection.classList.remove('hidden');
+                audioSection.classList.add('hidden');
+            } else {
+                audioSection.classList.add('hidden');
+                mudoSection.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
