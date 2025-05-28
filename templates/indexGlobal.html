@@ -28,7 +28,7 @@
             font-weight: bold;
             color: #555;
         }
-        select, input[type="file"], button {
+        select, button {
             width: 100%;
             padding: 0.6rem;
             margin-top: 0.5rem;
@@ -36,15 +36,13 @@
             border: 1px solid #ccc;
             font-size: 1rem;
         }
-        .section {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            border: 1px solid #ddd;
+        input[type="file"] {
+            width: 96.5%;
+            padding: 0.6rem;
+            margin-top: 0.5rem;
             border-radius: 5px;
-            background: #fafafa;
-        }
-        .section.hidden {
-            display: none;
+            border: 1px solid #ccc;
+            font-size: 1rem;
         }
         .resultado {
             margin-top: 2rem;
@@ -55,18 +53,20 @@
             color: #4a7c2f;
         }
         .btn-descargar {
-            margin-top: 1rem;
-            display: block;
-            width: 100%;
-            padding: 0.6rem;
+            margin-top: 0.5rem;
+            display: inline-block;
+            padding: 0.4rem 1rem;
             background: #4a7c2f;
             color: white;
             border: none;
             border-radius: 5px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             text-align: center;
             text-decoration: none;
+        }
+        .error {
+            color: red;
         }
     </style>
 </head>
@@ -82,50 +82,50 @@
                 <option value="mudo" {% if modulo == 'mudo' %}selected{% endif %}>IVR MUDO</option>
             </select>
 
-            <label for="campaña">Seleccione campaña</label>
-            <select id="campaña" name="campaña" required>
-                <option value="">--Seleccione campaña--</option>
-                {% for c in campañas %}
-                <option value="{{ c }}" {% if request.form.get('campaña') == c %}selected{% endif %}>{{ c }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="archivo">Subir archivo Excel</label>
-            <input type="file" id="archivo" name="archivo" accept=".xlsx,.xls" required />
-
-    
+            <label for="archivo">Subir archivos Excel</label>
+            <input type="file" id="archivo" name="archivos" accept=".xlsx,.xls" multiple required />
 
             <button type="submit" style="margin-top: 1.5rem;">Procesar</button>
         </form>
 
-        {% if procesado %}
+        {% if resultados %}
         <div class="resultado">
-            <p><strong>Archivo procesado:</strong> {{ nombre_archivo }}</p>
-            <p>Cantidad ingresada: {{ cantidad_ingresada }}</p>
-            <p>Cantidad final: {{ cantidad_final }}</p>
-        </div>
+            {% for r in resultados %}
+                <p><strong>Archivo procesado:</strong> {{ r.nombre_archivo }}</p>
+                {% if r.error %}
+                    <p class="error">{{ r.error }}</p>
+                {% else %}
+                    <p>{{ r.campaña }} CI({{ r.cantidad_ingresada }}) / CF({{ r.cantidad_final }})</p>
+                    <a href="{{ url_for('descargar_multiple', archivo=r.archivo_temp, nombre=r.nombre_archivo) }}" class="btn-descargar">Descargar</a>
+                {% endif %}
+                <hr>
+            {% endfor %}
 
-        <a href="{{ url_for('descargar') }}" class="btn-descargar">Descargar archivo procesado</a>
+            {% set archivos_validos = resultados | selectattr('archivo_temp', 'defined') | list %}
+            {% if archivos_validos | length > 1 %}
+                <button onclick="descargarTodos()" class="btn-descargar" style="background: #2a6dad;">Descargar todo</button>
+                <script>
+                    function descargarTodos() {
+                        const archivos = {{ archivos_validos | tojson | safe }};
+                        let delay = 0;
+                        archivos.forEach((archivo, index) => {
+                            setTimeout(() => {
+                                const url = `/descargar_multiple?archivo=${archivo.archivo_temp}&nombre=${encodeURIComponent(archivo.nombre_archivo)}`;
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = '';
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                            }, delay);
+                            delay += 800;
+                        });
+                    }
+                </script>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
-
-    <script>
-        const moduloSelect = document.getElementById('modulo');
-        const audioSection = document.getElementById('audio-section');
-        const mudoSection = document.getElementById('mudo-section');
-
-        moduloSelect.addEventListener('change', function() {
-            if(this.value === 'audio'){
-                audioSection.classList.remove('hidden');
-                mudoSection.classList.add('hidden');
-            } else if(this.value === 'mudo'){
-                mudoSection.classList.remove('hidden');
-                audioSection.classList.add('hidden');
-            } else {
-                audioSection.classList.add('hidden');
-                mudoSection.classList.add('hidden');
-            }
-        });
-    </script>
 </body>
 </html>
