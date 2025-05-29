@@ -3,6 +3,7 @@ import uuid
 import pandas as pd
 from flask import Flask, render_template, request, send_file, session, redirect, url_for
 import xlwt
+from difflib import SequenceMatcher
 
 app = Flask(__name__)
 app.secret_key = 'clave-secreta-para-session'
@@ -31,7 +32,7 @@ def obtener_telefonos_por_campania(campania):
         fila.iloc[0]['phone_number_jefe']
     )
 
-def guardar_xls(df, ruta):
+def guardar_xls(df, ruta, pintar_filas=True):
     wb = xlwt.Workbook()
     ws = wb.add_sheet('Sheet1')
     style_yellow = xlwt.easyxf('pattern: pattern solid, fore_colour yellow;')
@@ -41,12 +42,31 @@ def guardar_xls(df, ruta):
 
     for row_num, row in enumerate(df.itertuples(index=False), start=1):
         for col_num, value in enumerate(row):
-            if (row_num <= 3) or (row_num > len(df) - 3):
+            if pintar_filas and ((row_num <= 3) or (row_num > len(df) - 3)):
                 ws.write(row_num, col_num, value, style_yellow)
             else:
                 ws.write(row_num, col_num, value)
 
     wb.save(ruta)
+
+def detectar_campania(nombre_archivo):
+    nombre_archivo = nombre_archivo.upper()
+    mejor_coincidencia = None
+    mejor_score = 0
+
+    for campania in CAMPAÑAS:
+        campania_upper = campania.upper()
+        if campania_upper in nombre_archivo:
+            return campania  # coincidencia directa
+
+        score = SequenceMatcher(None, campania_upper, nombre_archivo).ratio()
+        if score > mejor_score:
+            mejor_score = score
+            mejor_coincidencia = campania
+
+    if mejor_score >= 0.9:
+        return mejor_coincidencia
+    return None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -63,7 +83,7 @@ def index():
 
         for archivo in archivos:
             nombre_archivo = archivo.filename
-            campaña_detectada = next((c for c in CAMPAÑAS if c in nombre_archivo.upper()), None)
+            campaña_detectada = detectar_campania(nombre_archivo)
 
             if not campaña_detectada:
                 resultados.append({
@@ -74,8 +94,13 @@ def index():
 
             try:
                 df = pd.read_excel(archivo)
+
+                # Asegurar solo las primeras dos columnas
+                df = df.iloc[:, :2]
+
                 df.iloc[:, 0] = df.iloc[:, 0].astype(str)
                 df.iloc[:, 1] = df.iloc[:, 1].astype(str)
+
                 df['city'] = campaña_detectada
                 df['state'] = 1 if modulo == 'audio' else 0
 
@@ -104,7 +129,9 @@ def index():
                 else:
                     df_final = df
 
-                guardar_xls(df_final, ruta_temp)
+                # ✅ Pintar solo si es AUDIO
+                guardar_xls(df_final, ruta_temp, pintar_filas=(modulo == 'audio'))
+
                 cantidad_final = len(df_final)
 
                 resultados.append({
