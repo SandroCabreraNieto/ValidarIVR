@@ -6,103 +6,190 @@
     <title>IVR AUDIO / IVR MUDO</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 2rem;
-            background: #f4f6f8;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #e9edf0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: white;
+
+        .modal-container {
+            display: flex;
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .left-panel, .right-panel {
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            overflow: hidden;
         }
-        h1 {
+
+        .left-panel {
+            width: 45%;
+            background: #f9fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border-right: 1px solid #dcdcdc;
+        }
+
+        .right-panel {
+            width: 55%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .formulario h1 {
             text-align: center;
             color: #333;
+            margin-bottom: 1rem;
         }
+
         label {
-            display: block;
-            margin-top: 1rem;
             font-weight: bold;
+            margin-top: 1rem;
             color: #555;
+            display: block;
         }
+
         select, button {
             width: 100%;
             padding: 0.6rem;
             margin-top: 0.5rem;
-            border-radius: 5px;
+            border-radius: 6px;
             border: 1px solid #ccc;
             font-size: 1rem;
         }
+
         input[type="file"] {
-            width: 96.5%;
+            width: 95%;
             padding: 0.6rem;
             margin-top: 0.5rem;
-            border-radius: 5px;
+            border-radius: 6px;
             border: 1px solid #ccc;
             font-size: 1rem;
         }
-        .resultado {
-            margin-top: 2rem;
+            
+        .resumen {
+            background: #e7f3fb;
+            border: 1px solid #b5d5ea;
+            border-radius: 8px;
             padding: 1rem;
-            background: #e2f0d9;
-            border: 1px solid #a2c57d;
-            border-radius: 5px;
+            flex-grow: 1;
+            overflow-y: auto;
+            color: #31708f;
+        }
+
+        .resultados {
+            flex: 1;
+            overflow-y: auto;
+            background: #f1f8ec;
+            border: 1px solid #cde0b4;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
             color: #4a7c2f;
         }
+
+        .descargar-todo {
+            padding: 1rem;
+            text-align: center;
+            border-top: 1px solid #ccc;
+        }
+
         .btn-descargar {
             margin-top: 0.5rem;
             display: inline-block;
-            padding: 0.4rem 1rem;
+            padding: 0.5rem 1.2rem;
             background: #4a7c2f;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: 0.95rem;
             cursor: pointer;
             text-align: center;
             text-decoration: none;
+           
         }
+
+        .btn-descargar:hover {
+            background: #3a6524;
+        }
+
         .error {
             color: red;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #cdd;
+            margin: 1rem 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>IVR AUDIO / IVR MUDO</h1>
+    <div class="modal-container">
+        
+        <!-- IZQUIERDA -->
+        <div class="left-panel">
+            <div class="formulario">
+                <h1 style="font-weight: bold; font-size: 24px;">IVR AUDIO / IVR MUDO</h1>
+                <form method="POST" enctype="multipart/form-data" id="mainForm" action="/">
+                    <label for="modulo">Seleccione módulo</label>
+                    <select id="modulo" name="modulo" required>
+                        <option value="">--Seleccione--</option>
+                        <option value="audio" {% if modulo == 'audio' %}selected{% endif %}>IVR AUDIO</option>
+                        <option value="mudo" {% if modulo == 'mudo' %}selected{% endif %}>IVR MUDO</option>
+                    </select>
 
-        <form method="POST" enctype="multipart/form-data" id="mainForm" action="/">
-            <label for="modulo">Seleccione módulo</label>
-            <select id="modulo" name="modulo" required>
-                <option value="">--Seleccione--</option>
-                <option value="audio" {% if modulo == 'audio' %}selected{% endif %}>IVR AUDIO</option>
-                <option value="mudo" {% if modulo == 'mudo' %}selected{% endif %}>IVR MUDO</option>
-            </select>
+                    <label for="archivo">Subir archivos Excel</label>
+                    <input type="file" id="archivo" name="archivos" accept=".xlsx,.xls" multiple required />
 
-            <label for="archivo">Subir archivos Excel</label>
-            <input type="file" id="archivo" name="archivos" accept=".xlsx,.xls" multiple required />
+                    <button type="submit" style="margin-top: 1.5rem;">Procesar</button>
+                </form>
+            </div>
 
-            <button type="submit" style="margin-top: 1.5rem;">Procesar</button>
-        </form>
+            {% if resultados %}
+            <div class="resumen">
+                <h3>RESUMEN ENVIO</h3>
+                {% for r in resultados %}
+                    {% if not r.error %}
+                        <strong>IVR {{ modulo | capitalize }} {{ r.campaña }} (En curso)</strong><br/>
+                        {{ r.campaña }}: {{ r.cantidad_final }}<br/><br/>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
 
-        {% if resultados %}
-        <div class="resultado">
-            {% for r in resultados %}
-                <p><strong>Archivo procesado:</strong> {{ r.nombre_archivo }}</p>
-                {% if r.error %}
-                    <p class="error">{{ r.error }}</p>
-                {% else %}
-                    <p>{{ r.campaña }} CI({{ r.cantidad_ingresada }}) / CF({{ r.cantidad_final }})</p>
-                    <a href="{{ url_for('descargar_multiple', archivo=r.archivo_temp, nombre=r.nombre_archivo) }}" class="btn-descargar">Descargar</a>
-                {% endif %}
-                <hr>
-            {% endfor %}
+        <!-- DERECHA -->
+        <div class="right-panel">
+            {% if resultados %}
+            <div class="resultados">
+                {% for r in resultados %}
+                    <p><strong>Archivo procesado:</strong> {{ r.nombre_archivo }}</p>
+                    {% if r.error %}
+                        <p class="error">{{ r.error }}</p>
+                    {% else %}
+                        <p>{{ r.campaña }} CI({{ r.cantidad_ingresada }}) / CF({{ r.cantidad_final }})</p>
+                        <a href="{{ url_for('descargar_multiple', archivo=r.archivo_temp, nombre=r.nombre_archivo) }}" class="btn-descargar">Descargar</a>
+                    {% endif %}
+                    <hr>
+                {% endfor %}
+            </div>
 
             {% set archivos_validos = resultados | selectattr('archivo_temp', 'defined') | list %}
             {% if archivos_validos | length > 1 %}
+            <div class="descargar-todo">
                 <button onclick="descargarTodos()" class="btn-descargar" style="background: #2a6dad;">Descargar todo</button>
                 <script>
                     function descargarTodos() {
@@ -123,9 +210,10 @@
                         });
                     }
                 </script>
+            </div>
+            {% endif %}
             {% endif %}
         </div>
-        {% endif %}
     </div>
 </body>
 </html>
